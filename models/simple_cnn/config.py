@@ -9,6 +9,14 @@ from pathlib import Path
 import torch
 
 
+def default_device() -> str:
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 # Class mapping: 1-based labels (matches eval/utils.py CLASS_NAMES).
 CLASS_NAMES: dict[int, str] = {
     1: "Surprise",
@@ -30,9 +38,9 @@ class Config:
     # Image / data
     image_size: int = 224
     batch_size: int = 64
-    num_workers: int = 4
+    num_workers: int = 0 if torch.backends.mps.is_available() else 4
 
-    pin_memory: bool = True
+    pin_memory: bool = not torch.backends.mps.is_available()
 
     # Optimizer
     learning_rate: float = 3e-4
@@ -60,7 +68,7 @@ class Config:
 
     # Misc
     seed: int = 42
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = field(default_factory=default_device)
 
     # Derived paths (resolved in __post_init__)
     project_root: Path = field(init=False)
